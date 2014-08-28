@@ -51,17 +51,17 @@ class HierarchicalModelAdmin(ModelAdmin):
         return super(HierarchicalModelAdmin, self).change_view(*args, **kwargs)
 
     def action_checkbox(self, obj):
-        if getattr(obj, Hierarchy.UP_MARKER, False):
+        if getattr(obj, Hierarchy.UPPER_LEVEL_LINK_MARKER, False):
             return ''
         return super(HierarchicalModelAdmin, self).action_checkbox(obj)
 
     def hierarchy_nav(self, obj):
         result_repr = ''  # No children.
-        ch_count = getattr(obj, Hierarchy.CHILD_COUNT_ATTR, 0)
+        ch_count = getattr(obj, Hierarchy.CHILD_COUNT_MODEL_ATTR, 0)
         if ch_count:  # Has children
             icon = 'icon icon-folder'
             title = _('Objects inside: %s') % ch_count
-            if getattr(obj, Hierarchy.UP_MARKER, False):
+            if getattr(obj, Hierarchy.UPPER_LEVEL_LINK_MARKER, False):
                 icon = 'icon icon-folder-up'
                 title = _('Upper level')
             url = './'
@@ -78,10 +78,10 @@ class HierarchicalModelAdmin(ModelAdmin):
 
 class Hierarchy(object):
 
-    HIERARCHY_PARENT_ID = 'pid'
-    CHILD_COUNT_ATTR = 'child_count'
+    PARENT_ID_QS_PARAM = 'pid'  # Parent ID query string parameter.
+    CHILD_COUNT_MODEL_ATTR = 'child_count'
+    UPPER_LEVEL_LINK_MARKER = 'dummy'
     NAV_FIELD_MARKER = 'hierarchy_nav'
-    UP_MARKER = 'dummy'
 
     @classmethod
     def init_hierarchy(cls, model_admin):
@@ -100,17 +100,17 @@ class Hierarchy(object):
         changelist.hierarchy = self
         param_value = None
         if not isinstance(self, NoHierarchy):
-            val = request.GET.get(self.HIERARCHY_PARENT_ID, False)
+            val = request.GET.get(self.PARENT_ID_QS_PARAM, False)
             param_value = val or None
             try:
-                del changelist.params[self.HIERARCHY_PARENT_ID]
+                del changelist.params[self.PARENT_ID_QS_PARAM]
             except KeyError:
                 pass
         return param_value
 
 
 class NoHierarchy(Hierarchy):
-    """"""
+    """Dummy (disabled) hierarchy class."""
 
 
 class AdjacencyList(Hierarchy):
@@ -132,16 +132,16 @@ class AdjacencyList(Hierarchy):
         if parent_id:
             parent = model.objects.get(pk=parent_id)
             parent = model(pk=get_parent(parent))
-            setattr(parent, self.CHILD_COUNT_ATTR, 1)
-            setattr(parent, self.UP_MARKER, True)
+            setattr(parent, self.CHILD_COUNT_MODEL_ATTR, 1)
+            setattr(parent, self.UPPER_LEVEL_LINK_MARKER, True)
             result_list = [parent] + result_list
         kwargs_filter = {'%s__in' % self.pid_field: result_list}
         stats_qs = model.objects.filter(**kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
         stats = {item[0]: item[1] for item in stats_qs}
         for item in result_list:
-            if not hasattr(item, self.CHILD_COUNT_ATTR):
+            if not hasattr(item, self.CHILD_COUNT_MODEL_ATTR):
                 try:
-                    setattr(item, self.CHILD_COUNT_ATTR, stats[item.id])
+                    setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.id])
                 except KeyError:
-                    setattr(item, self.CHILD_COUNT_ATTR, 0)
+                    setattr(item, self.CHILD_COUNT_MODEL_ATTR, 0)
         return result_list
