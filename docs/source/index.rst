@@ -51,4 +51,4 @@ Get involved into django-admirarchy
 Also
 ----
 
-If the application is not what you want for hierarchies navigation, you might be interested in considering the other choices — https://www.djangopackages.com/grids/g/tree-traversal/
+If the application is not what you want for hierarchies navigation, you might be interested in considering the other choices — http://djangopackages.com/grids/g/trees-and-graphs/
