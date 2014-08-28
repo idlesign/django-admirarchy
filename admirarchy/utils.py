@@ -1,8 +1,12 @@
+from django.conf import settings
 from django.db import models
+from django.db.models.fields import FieldDoesNotExist
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin.views.main import ChangeList
 from django.contrib.admin.options import ModelAdmin
+
+from .exceptions import AdmirarchyConfigurationError
 
 
 class HierarchicalChangeList(ChangeList):
@@ -23,6 +27,13 @@ class HierarchicalChangeList(ChangeList):
         super(HierarchicalChangeList, self).get_results(request)
         if self.hierarchy:
             self.result_list = self.hierarchy.get_updated_changelist_results(self.result_list, model=self.model)
+
+    def check_field_exists(self, field_name):
+        if settings.DEBUG:
+            try:
+                self.lookup_opts.get_field_by_name(field_name)
+            except FieldDoesNotExist as e:
+                raise AdmirarchyConfigurationError(e)
 
 
 class HierarchicalModelAdmin(ModelAdmin):
@@ -109,6 +120,7 @@ class AdjacencyList(Hierarchy):
         self.pid_field_real = '%s_id' % parent_id_field
 
     def update_changelist(self, changelist, request):
+        changelist.check_field_exists(self.pid_field)
         param_value = super(AdjacencyList, self).update_changelist(changelist, request)
         changelist.params[self.pid_field] = param_value
         return param_value
