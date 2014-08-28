@@ -77,7 +77,7 @@ class Hierarchy(object):
         hierarchy = getattr(model_admin, 'hierarchy')
         if hierarchy:
             if not isinstance(hierarchy, Hierarchy):
-                hierarchy = AdjacentList()
+                hierarchy = AdjacencyList()
         else:
             hierarchy = NoHierarchy()
         model_admin.hierarchy = hierarchy
@@ -102,14 +102,14 @@ class NoHierarchy(Hierarchy):
     """"""
 
 
-class AdjacentList(Hierarchy):
+class AdjacencyList(Hierarchy):
 
     def __init__(self, parent_id_field='parent'):
         self.pid_field = parent_id_field
         self.pid_field_real = '%s_id' % parent_id_field
 
     def update_changelist(self, changelist, request):
-        param_value = super(AdjacentList, self).update_changelist(changelist, request)
+        param_value = super(AdjacencyList, self).update_changelist(changelist, request)
         changelist.params[self.pid_field] = param_value
         return param_value
 
