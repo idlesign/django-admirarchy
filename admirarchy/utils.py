@@ -8,6 +8,8 @@ from django.contrib.admin.options import ModelAdmin
 
 from .exceptions import AdmirarchyConfigurationError
 
+# TODO tests
+
 
 class HierarchicalModelAdmin(ModelAdmin):
     """Customized Model admin handling hierarchies navigation."""
@@ -38,7 +40,7 @@ class HierarchicalModelAdmin(ModelAdmin):
         Disable checkbox for parent item navigation link.
 
         """
-        if getattr(obj, Hierarchy.UPPER_LEVEL_LINK_MARKER, False):
+        if getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False):
             return ''
         return super(HierarchicalModelAdmin, self).action_checkbox(obj)
 
@@ -48,10 +50,11 @@ class HierarchicalModelAdmin(ModelAdmin):
         result_repr = ''  # For items without children.
         ch_count = getattr(obj, Hierarchy.CHILD_COUNT_MODEL_ATTR, 0)
 
-        if ch_count:  # For items with children.
+        is_parent_link = getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False)
+        if is_parent_link or ch_count:  # For items with children.
             icon = 'icon icon-folder'
             title = _('Objects inside: %s') % ch_count
-            if getattr(obj, Hierarchy.UPPER_LEVEL_LINK_MARKER, False):
+            if is_parent_link:
                 icon = 'icon icon-folder-up'
                 title = _('Upper level')
             url = './'
@@ -114,10 +117,11 @@ class HierarchicalChangeList(ChangeList):
 
 
 class Hierarchy(object):
+    """Base hierarchy class. Hierarchy classes must inherit from it."""
 
     PARENT_ID_QS_PARAM = 'pid'  # Parent ID query string parameter.
     CHILD_COUNT_MODEL_ATTR = 'child_count'  # Attribute given to every model.
-    UPPER_LEVEL_LINK_MARKER = 'dummy'
+    UPPER_LEVEL_MODEL_ATTR = 'dummy'  # This attribute indicated the model is just a dummy upper level link.
     NAV_FIELD_MARKER = 'hierarchy_nav'
 
     @classmethod
@@ -164,6 +168,7 @@ class NoHierarchy(Hierarchy):
 class AdjacencyList(Hierarchy):
 
     def __init__(self, parent_id_field='parent'):
+        self.pid = None
         self.pid_field = parent_id_field
         self.pid_field_real = '%s_id' % parent_id_field
 
@@ -179,21 +184,20 @@ class AdjacencyList(Hierarchy):
     def hook_get_queryset(self, changelist, request):
         """Triggered by `ChangeList.get_queryset()`."""
         changelist.check_field_exists(self.pid_field)
-        pid = self.get_pid_from_request(changelist, request)
-        changelist.params[self.pid_field] = pid
-        return pid
+        self.pid = self.get_pid_from_request(changelist, request)
+        changelist.params[self.pid_field] = self.pid
 
     def hook_get_results(self, changelist):
         """Triggered by `ChangeList.get_results()`."""
-        get_parent = lambda m: getattr(m, self.pid_field_real, None)
         result_list = list(changelist.result_list)
-        parent_id = get_parent(result_list[0])
-        if parent_id:
-            parent = changelist.model.objects.get(pk=parent_id)
-            parent = changelist.model(pk=get_parent(parent))
-            setattr(parent, self.CHILD_COUNT_MODEL_ATTR, 1)
-            setattr(parent, self.UPPER_LEVEL_LINK_MARKER, True)
+        if self.pid:
+            # Render to upper level link.
+            parent = changelist.model.objects.get(pk=self.pid)
+            parent = changelist.model(pk=getattr(parent, self.pid_field_real, None))
+            setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
             result_list = [parent] + result_list
+
+        # Get children stats.
         kwargs_filter = {'%s__in' % self.pid_field: result_list}
         stats_qs = changelist.model.objects.filter(**kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
         stats = {item[0]: item[1] for item in stats_qs}
@@ -203,4 +207,79 @@ class AdjacencyList(Hierarchy):
                     setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.id])
                 except KeyError:
                     setattr(item, self.CHILD_COUNT_MODEL_ATTR, 0)
+
+        changelist.result_list = result_list
+
+
+class NestedSet(Hierarchy):
+
+    def __init__(self, left_field='lft', right_field='rgt', level_field='level', root_level=0):
+        self.pid = None
+        self.parent = None
+        self.left_field = left_field
+        self.right_field = right_field
+        self.level_field = level_field
+        self.root_level = root_level
+
+    def get_range_clause(self, obj):
+        return getattr(obj, self.left_field), getattr(obj, self.right_field)
+
+    def get_immediate_children_filter(self, obj):
+        flt = {
+            '%s__range' % self.left_field: self.get_range_clause(obj),
+            self.level_field: getattr(obj, self.level_field) + 1
+        }
+        return flt
+
+    def hook_get_queryset(self, changelist, request):
+        """Triggered by `ChangeList.get_queryset()`."""
+        changelist.check_field_exists(self.left_field)
+        changelist.check_field_exists(self.right_field)
+        self.pid = self.get_pid_from_request(changelist, request)
+
+        # Get parent item first.
+        qs = changelist.root_queryset
+        if self.pid:
+            self.parent = qs.get(pk=self.pid)
+            changelist.params.update(self.get_immediate_children_filter(self.parent))
+        else:
+            changelist.params[self.level_field] = self.root_level
+            self.parent = qs.get(**changelist.params)
+
+    def hook_get_results(self, changelist):
+        """Triggered by `ChangeList.get_results()`."""
+
+        # Poor NestedSet guys they've punished themselves once chosen that approach,
+        # and now we punish them again with all those DB hits.
+
+        result_list = list(changelist.result_list)
+
+        # Get children stats.
+        filter_kwargs = {'%s' % self.left_field: models.F('%s' % self.right_field) - 1}  # Leaf nodes only.
+        filter_kwargs.update(self.get_immediate_children_filter(self.parent))
+        stats_qs = changelist.result_list.filter(**filter_kwargs).values_list('id')
+        leafs = [item[0] for item in stats_qs]
+        for result in result_list:
+            if result.id in leafs:
+                setattr(result, self.CHILD_COUNT_MODEL_ATTR, 0)
+            else:
+                setattr(result, self.CHILD_COUNT_MODEL_ATTR, '>1')  # Too much pain to get real stats, so that'll suffice.
+
+        if self.pid:
+            # Render to upper level link.
+            parent = self.parent
+            filter_kwargs = {
+                '%s__lt' % self.left_field: getattr(parent, self.left_field),
+                '%s__gt' % self.right_field: getattr(parent, self.right_field),
+            }
+            try:
+                granparent_id = changelist.model.objects.filter(**filter_kwargs).order_by('-%s' % self.left_field)[0].id
+            except IndexError:
+                granparent_id = None
+
+            if granparent_id != parent.id:
+                parent = changelist.model(pk=granparent_id)
+            setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
+            result_list = [parent] + result_list
+
         changelist.result_list = result_list

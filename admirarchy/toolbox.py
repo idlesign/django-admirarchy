@@ -1,2 +1,1 @@
-from .utils import HierarchicalModelAdmin, AdjacencyList
-
+from .utils import HierarchicalModelAdmin, AdjacencyList, NestedSet
