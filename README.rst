@@ -16,7 +16,11 @@ Description
 
 Have you ever wanted Django Admin to be able to navigate through hierarchies?
 
+Without existing models modifications? Yeah!
+
 Admirarchy does it in an old-school way, just like Norton Commander and Co - one level at a time.
+
+Hierarchies described as adjacency lists and nested sets are supported.
 
 
 .. code-block:: python
