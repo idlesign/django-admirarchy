@@ -1,3 +1,5 @@
+from copy import copy
+
 from django.conf import settings
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
@@ -16,6 +18,7 @@ class HierarchicalModelAdmin(ModelAdmin):
 
     hierarchy = False
     change_list_template = 'admin/admirarchy/change_list.html'
+    _current_changelist = None
 
     def get_changelist(self, request, **kwargs):
         """Returns an appropriate ChangeList for ModelAdmin.
@@ -31,6 +34,7 @@ class HierarchicalModelAdmin(ModelAdmin):
 
     def change_view(self, *args, **kwargs):
         """Renders detailed model edit page."""
+        Hierarchy.init_hierarchy(self)
         self.hierarchy.hook_change_view(self, args, kwargs)
         return super(HierarchicalModelAdmin, self).change_view(*args, **kwargs)
 
@@ -51,7 +55,7 @@ class HierarchicalModelAdmin(ModelAdmin):
         ch_count = getattr(obj, Hierarchy.CHILD_COUNT_MODEL_ATTR, 0)
 
         is_parent_link = getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False)
-        if is_parent_link or ch_count:  # For items with children.
+        if is_parent_link or ch_count:  # For items with children and parent links.
             icon = 'icon icon-folder'
             title = _('Objects inside: %s') % ch_count
             if is_parent_link:
@@ -59,9 +63,17 @@ class HierarchicalModelAdmin(ModelAdmin):
                 title = _('Upper level')
             url = './'
             if obj.pk:
-                url = '?pid=%s' % obj.pk
+                url = '?%s=%s' % (Hierarchy.PARENT_ID_QS_PARAM, obj.pk)
 
-            #url = add_preserved_filters({'preserved_filters': changelist.preserved_filters, 'opts': changelist.opts}, url)
+            if self._current_changelist.is_popup:
+                qs_get = copy(self._current_changelist._request.GET)
+                try:
+                    del qs_get[Hierarchy.PARENT_ID_QS_PARAM]
+                except KeyError:
+                    pass
+                qs_get = qs_get.urlencode()
+                url = ('%s&%s' if '?' in url else '%s?%s') % (url, qs_get)
+
             result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, title)
         return result_repr
     hierarchy_nav.short_description = ''
@@ -76,10 +88,13 @@ class HierarchicalChangeList(ChangeList):
         :param args:
         :return:
         """
-        self.hierarchy = args[-1].hierarchy  # model_admin
-        if not isinstance(self.hierarchy, NoHierarchy):
+        model_admin = args[-1]
+        model_admin._current_changelist = self
+        self._hierarchy = model_admin.hierarchy
+        self._request = args[0]
+        if not isinstance(self._hierarchy, NoHierarchy):
             args = list(args)
-            args[2] = [self.hierarchy.NAV_FIELD_MARKER] + list(args[2])  # list_display
+            args[2] = [self._hierarchy.NAV_FIELD_MARKER] + list(args[2])  # list_display
         super(HierarchicalChangeList, self).__init__(*args)
 
     def get_queryset(self, request):
@@ -88,7 +103,7 @@ class HierarchicalChangeList(ChangeList):
         :param request:
         :return:
         """
-        self.hierarchy.hook_get_queryset(self, request)
+        self._hierarchy.hook_get_queryset(self, request)
         return super(HierarchicalChangeList, self).get_queryset(request)
 
     def get_results(self, request):
@@ -98,7 +113,7 @@ class HierarchicalChangeList(ChangeList):
         :return:
         """
         super(HierarchicalChangeList, self).get_results(request)
-        self.hierarchy.hook_get_results(self)
+        self._hierarchy.hook_get_results(self)
 
     def check_field_exists(self, field_name):
         """Implements field exists check for debugging purposes.
@@ -178,7 +193,7 @@ class AdjacencyList(Hierarchy):
         Replaces parent item dropdown list with a lookup dialog.
 
         """
-        # TODO Implement in-popups functioning.
+        # TODO start from an appropriate tree level when in parent lookup popup
         changelist.raw_id_fields += (self.pid_field,)
 
     def hook_get_queryset(self, changelist, request):
