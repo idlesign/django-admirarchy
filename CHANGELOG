@@ -1,7 +1,11 @@
 django-admirarchy changelog
 ===========================
 
+v0.2.0
+------
++ Implemented in-popup navigation for adjacency lists.
+
+
 v0.1.0
 ------
 + Basic functionality.
-
