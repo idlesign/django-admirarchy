@@ -8,6 +8,9 @@ https://github.com/idlesign/django-admirarchy
 .. image:: https://pypip.in/d/django-admirarchy/badge.png
         :target: https://crate.io/packages/django-admirarchy
 
+.. image:: https://landscape.io/github/idlesign/django-admirarchy/master/landscape.svg?style=plastic
+   :target: https://landscape.io/github/idlesign/django-admirarchy/master
+
 
 Description
 -----------
