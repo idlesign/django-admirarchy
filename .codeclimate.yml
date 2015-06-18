@@ -1,0 +1,11 @@
+languages:
+  JavaScript: true
+  Python: true
+
+exclude_paths:
+- "admirarchy/runtests.py"
+- "admirarchy/tests.py"
+- "admirarchy/tests/*"
+- "admirarchy/migrations/*"
+- "admirarchy/south_migrations/*"
+- "docs/*"
