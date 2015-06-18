@@ -2,14 +2,23 @@ django-admirarchy
 =================
 https://github.com/idlesign/django-admirarchy
 
-.. image:: https://badge.fury.io/py/django-admirarchy.png
-    :target: http://badge.fury.io/py/django-admirarchy
+.. image:: https://img.shields.io/pypi/v/django-admirarchy.svg
+    :target: https://pypi.python.org/pypi/django-admirarchy
 
-.. image:: https://pypip.in/d/django-admirarchy/badge.png
-        :target: https://crate.io/packages/django-admirarchy
+.. image:: https://img.shields.io/pypi/dm/django-admirarchy.svg
+    :target: https://pypi.python.org/pypi/django-admirarchy
 
-.. image:: https://landscape.io/github/idlesign/django-admirarchy/master/landscape.svg?style=plastic
-   :target: https://landscape.io/github/idlesign/django-admirarchy/master
+.. image:: https://img.shields.io/pypi/l/django-admirarchy.svg
+    :target: https://pypi.python.org/pypi/django-admirarchy
+
+.. image:: https://img.shields.io/coveralls/idlesign/django-admirarchy/master.svg
+    :target: https://coveralls.io/r/idlesign/django-admirarchy
+
+.. image:: https://img.shields.io/travis/idlesign/django-admirarchy/master.svg
+    :target: https://travis-ci.org/idlesign/django-admirarchy
+
+.. image:: https://img.shields.io/codeclimate/github/idlesign/django-admirarchy.svg
+   :target: https://codeclimate.com/github/idlesign/django-admirarchy
 
 
 Description
