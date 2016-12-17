@@ -123,7 +123,7 @@ class HierarchicalChangeList(ChangeList):
         """
         if settings.DEBUG:
             try:
-                self.lookup_opts.get_field_by_name(field_name)
+                self.lookup_opts.get_field(field_name)
             except FieldDoesNotExist as e:
                 raise AdmirarchyConfigurationError(e)
 

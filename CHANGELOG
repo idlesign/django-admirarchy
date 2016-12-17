@@ -1,6 +1,12 @@
 django-admirarchy changelog
 ===========================
 
+
+Unreleased
+----------
+* Django 1.10 compatibility improved.
+
+
 v0.2.0
 ------
 + Implemented in-popup navigation for adjacency lists.
