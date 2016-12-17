@@ -4,24 +4,27 @@
 
 {% block extrastyle %}{{ block.super }}
 <style>
-	#changelist .column-hierarchy_nav,
-	#grp-changelist .field-hierarchy_nav {
-		width: 3em;
-		text-align: center;
-	}
-	#changelist .icon,
-	#grp-changelist .icon {
-		width: 16px;
-		height: 16px;
-		display: inline-block;
-	}
-	#changelist .icon-folder,
-	#grp-changelist .icon-folder {
-		background: url('{% static "admin/admirarchy/img/icon_folder.png" %}');
-	}
-	#changelist .icon-folder-up,
-	#grp-changelist .icon-folder-up {
-		background: url('{% static "admin/admirarchy/img/icon_folder_up.png" %}');
-	}
+    #changelist .column-hierarchy_nav,
+    #grp-changelist .field-hierarchy_nav {
+        width: 3em;
+        text-align: center;
+    }
+
+    #changelist .icon,
+    #grp-changelist .icon {
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+    }
+
+    #changelist .icon-folder,
+    #grp-changelist .icon-folder {
+        background: url('{% static "admin/admirarchy/img/icon_folder.png" %}');
+    }
+
+    #changelist .icon-folder-up,
+    #grp-changelist .icon-folder-up {
+        background: url('{% static "admin/admirarchy/img/icon_folder_up.png" %}');
+    }
 </style>
 {% endblock %}
