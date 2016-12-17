@@ -4,6 +4,7 @@ django-admirarchy changelog
 
 Unreleased
 ----------
++ Added Grappelli style support.
 * Django 1.10 compatibility improved.
 
 
