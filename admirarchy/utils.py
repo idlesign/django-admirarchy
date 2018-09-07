@@ -82,20 +82,26 @@ class HierarchicalModelAdmin(ModelAdmin):
 class HierarchicalChangeList(ChangeList):
     """Customized ChangeList used by HierarchicalModelAdmin to handle hierarchies."""
 
-    def __init__(self, *args):
+    def __init__(self, request, model, list_display, list_display_links,
+                 list_filter, date_hierarchy, search_fields,
+                 list_select_related, list_per_page, list_max_show_all,
+                 list_editable, model_admin, *args):
         """Adds hierarchy navigation column if necessary.
 
         :param args:
         :return:
         """
-        model_admin = args[-1]
         model_admin._current_changelist = self
         self._hierarchy = model_admin.hierarchy
-        self._request = args[0]
+        self._request = request
         if not isinstance(self._hierarchy, NoHierarchy):
-            args = list(args)
-            args[2] = [self._hierarchy.NAV_FIELD_MARKER] + list(args[2])  # list_display
-        super(HierarchicalChangeList, self).__init__(*args)
+            list_display = [self._hierarchy.NAV_FIELD_MARKER] + list_display
+
+        super(HierarchicalChangeList, self).__init__(
+            request, model, list_display, list_display_links,
+            list_filter, date_hierarchy, search_fields,
+            list_select_related, list_per_page, list_max_show_all,
+            list_editable, model_admin, *args)
 
     def get_queryset(self, request):
         """Constructs a query set.
