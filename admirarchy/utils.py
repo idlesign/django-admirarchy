@@ -294,7 +294,7 @@ class NestedSet(Hierarchy):
 
         else:
             changelist.params[self.level_field] = self.root_level
-            self.parent = qs.get(**changelist.params)
+            self.parent = qs.get(**{key: val for key, val in changelist.params.items() if not key.startswith('_')})
 
     def hook_get_results(self, changelist):
         """Triggered by `ChangeList.get_results()`."""

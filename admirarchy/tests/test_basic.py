@@ -48,6 +48,12 @@ def actual_test(model_id, user_create, request_client):
     assert model_id + '_child1' in resp.rendered_content
     assert model_id + '_child2' in resp.rendered_content
 
+    # Foreign key popup.
+    resp = client.get(url_base + '?_to_field=id&_popup=1')
+
+    assert '?pid=1&amp;_to_field=id&amp;_popup=1' in resp.rendered_content
+    assert model_id + '_parent' in resp.rendered_content
+
 
 def test_adjacency_list(request_client, user_create):
 
