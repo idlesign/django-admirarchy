@@ -1,12 +1,19 @@
 from django.contrib import admin
 
-from .models import AdjacencyListModel
-from admirarchy.toolbox import HierarchicalModelAdmin
+from admirarchy.toolbox import HierarchicalModelAdmin, NestedSet
+
+from .models import AdjacencyListModel, NestedSetModel
 
 
-class MyModelAdmin(HierarchicalModelAdmin):
+class AdjacencyListModelAdmin(HierarchicalModelAdmin):
 
     hierarchy = True
 
 
-admin.site.register(AdjacencyListModel, MyModelAdmin)
+class NestedSetModelModelAdmin(HierarchicalModelAdmin):
+
+    hierarchy = NestedSet()
+
+
+admin.site.register(AdjacencyListModel, AdjacencyListModelAdmin)
+admin.site.register(NestedSetModel, NestedSetModelModelAdmin)
