@@ -1,22 +1,21 @@
 from copy import copy
 
 from django.conf import settings
+from django.contrib.admin.options import ModelAdmin
+from django.contrib.admin.views.main import ChangeList
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
+from django.utils.encoding import force_text
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.admin.views.main import ChangeList
-from django.contrib.admin.options import ModelAdmin
 
 from .exceptions import AdmirarchyConfigurationError
-
-# TODO tests
 
 
 class HierarchicalModelAdmin(ModelAdmin):
     """Customized Model admin handling hierarchies navigation."""
 
-    hierarchy = False
+    hierarchy = False  # type: Hierarchy
     change_list_template = 'admin/admirarchy/change_list.html'
     _current_changelist = None
 
@@ -27,15 +26,18 @@ class HierarchicalModelAdmin(ModelAdmin):
 
         :param request:
         :param kwargs:
-        :return:
+        :rtype: HierarchicalChangeList
         """
         Hierarchy.init_hierarchy(self)
+
         return HierarchicalChangeList
 
     def change_view(self, *args, **kwargs):
         """Renders detailed model edit page."""
         Hierarchy.init_hierarchy(self)
+
         self.hierarchy.hook_change_view(self, args, kwargs)
+
         return super(HierarchicalModelAdmin, self).change_view(*args, **kwargs)
 
     def action_checkbox(self, obj):
@@ -46,6 +48,7 @@ class HierarchicalModelAdmin(ModelAdmin):
         """
         if getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False):
             return ''
+
         return super(HierarchicalModelAdmin, self).action_checkbox(obj)
 
     def hierarchy_nav(self, obj):
@@ -55,27 +58,37 @@ class HierarchicalModelAdmin(ModelAdmin):
         ch_count = getattr(obj, Hierarchy.CHILD_COUNT_MODEL_ATTR, 0)
 
         is_parent_link = getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False)
+
         if is_parent_link or ch_count:  # For items with children and parent links.
             icon = 'icon icon-folder'
             title = _('Objects inside: %s') % ch_count
+
             if is_parent_link:
                 icon = 'icon icon-folder-up'
                 title = _('Upper level')
+
             url = './'
+
             if obj.pk:
                 url = '?%s=%s' % (Hierarchy.PARENT_ID_QS_PARAM, obj.pk)
 
             if self._current_changelist.is_popup:
+
                 qs_get = copy(self._current_changelist._request.GET)
+
                 try:
                     del qs_get[Hierarchy.PARENT_ID_QS_PARAM]
+
                 except KeyError:
                     pass
+
                 qs_get = qs_get.urlencode()
                 url = ('%s&%s' if '?' in url else '%s?%s') % (url, qs_get)
 
-            result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, title)
+            result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, force_text(title))
+
         return result_repr
+
     hierarchy_nav.short_description = ''
 
 
@@ -104,6 +117,7 @@ class HierarchicalChangeList(ChangeList):
         :return:
         """
         self._hierarchy.hook_get_queryset(self, request)
+
         return super(HierarchicalChangeList, self).get_queryset(request)
 
     def get_results(self, request):
@@ -113,6 +127,7 @@ class HierarchicalChangeList(ChangeList):
         :return:
         """
         super(HierarchicalChangeList, self).get_results(request)
+
         self._hierarchy.hook_get_results(self)
 
     def check_field_exists(self, field_name):
@@ -121,11 +136,14 @@ class HierarchicalChangeList(ChangeList):
         :param field_name:
         :return:
         """
-        if settings.DEBUG:
-            try:
-                self.lookup_opts.get_field(field_name)
-            except FieldDoesNotExist as e:
-                raise AdmirarchyConfigurationError(e)
+        if not settings.DEBUG:
+            return
+
+        try:
+            self.lookup_opts.get_field(field_name)
+
+        except FieldDoesNotExist as e:
+            raise AdmirarchyConfigurationError(e)
 
 
 ########################################################
@@ -143,11 +161,14 @@ class Hierarchy(object):
     def init_hierarchy(cls, model_admin):
         """Initializes model admin with hierarchy data."""
         hierarchy = getattr(model_admin, 'hierarchy')
+
         if hierarchy:
             if not isinstance(hierarchy, Hierarchy):
                 hierarchy = AdjacencyList()  # For `True` and etc. TODO heuristics maybe.
+
         else:
             hierarchy = NoHierarchy()
+
         model_admin.hierarchy = hierarchy
 
     @classmethod
@@ -160,10 +181,13 @@ class Hierarchy(object):
         """
         val = request.GET.get(cls.PARENT_ID_QS_PARAM, False)
         pid = val or None
+
         try:
             del changelist.params[cls.PARENT_ID_QS_PARAM]
+
         except KeyError:
             pass
+
         return pid
 
     def hook_change_view(self, changelist, view_args, view_kwargs):
@@ -205,6 +229,7 @@ class AdjacencyList(Hierarchy):
     def hook_get_results(self, changelist):
         """Triggered by `ChangeList.get_results()`."""
         result_list = list(changelist.result_list)
+
         if self.pid:
             # Render to upper level link.
             parent = changelist.model.objects.get(pk=self.pid)
@@ -214,14 +239,22 @@ class AdjacencyList(Hierarchy):
 
         # Get children stats.
         kwargs_filter = {'%s__in' % self.pid_field: result_list}
-        stats_qs = changelist.model.objects.filter(**kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
+
+        stats_qs = changelist.model.objects.filter(
+            **kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
+
         stats = {item[0]: item[1] for item in stats_qs}
+
         for item in result_list:
-            if not hasattr(item, self.CHILD_COUNT_MODEL_ATTR):
-                try:
-                    setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.id])
-                except KeyError:
-                    setattr(item, self.CHILD_COUNT_MODEL_ATTR, 0)
+
+            if hasattr(item, self.CHILD_COUNT_MODEL_ATTR):
+                continue
+
+            try:
+                setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.id])
+
+            except KeyError:
+                setattr(item, self.CHILD_COUNT_MODEL_ATTR, 0)
 
         changelist.result_list = result_list
 
@@ -254,9 +287,11 @@ class NestedSet(Hierarchy):
 
         # Get parent item first.
         qs = changelist.root_queryset
+
         if self.pid:
             self.parent = qs.get(pk=self.pid)
             changelist.params.update(self.get_immediate_children_filter(self.parent))
+
         else:
             changelist.params[self.level_field] = self.root_level
             self.parent = qs.get(**changelist.params)
@@ -272,9 +307,12 @@ class NestedSet(Hierarchy):
         # Get children stats.
         filter_kwargs = {'%s' % self.left_field: models.F('%s' % self.right_field) - 1}  # Leaf nodes only.
         filter_kwargs.update(self.get_immediate_children_filter(self.parent))
+
         stats_qs = changelist.result_list.filter(**filter_kwargs).values_list('id')
         leafs = [item[0] for item in stats_qs]
+
         for result in result_list:
+
             if result.id in leafs:
                 setattr(result, self.CHILD_COUNT_MODEL_ATTR, 0)
             else:
@@ -283,10 +321,12 @@ class NestedSet(Hierarchy):
         if self.pid:
             # Render to upper level link.
             parent = self.parent
+
             filter_kwargs = {
                 '%s__lt' % self.left_field: getattr(parent, self.left_field),
                 '%s__gt' % self.right_field: getattr(parent, self.right_field),
             }
+
             try:
                 granparent_id = changelist.model.objects.filter(**filter_kwargs).order_by('-%s' % self.left_field)[0].id
             except IndexError:
@@ -294,6 +334,7 @@ class NestedSet(Hierarchy):
 
             if granparent_id != parent.id:
                 parent = changelist.model(pk=granparent_id)
+
             setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
             result_list = [parent] + result_list
 
