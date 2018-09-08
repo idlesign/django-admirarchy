@@ -51,7 +51,10 @@ def actual_test(model_id, user_create, request_client):
     # Foreign key popup.
     resp = client.get(url_base + '?_to_field=id&_popup=1')
 
-    assert '?pid=1&amp;_to_field=id&amp;_popup=1' in resp.rendered_content
+    print(resp.rendered_content)
+
+    assert '?pid=1&amp;' in resp.rendered_content
+    assert '_popup=1' in resp.rendered_content
     assert model_id + '_parent' in resp.rendered_content
 
 
