@@ -5,6 +5,7 @@ django-admirarchy changelog
 Unreleased
 ----------
 * Fixed FK popup for nested sets.
+* Improved Django 2+ compatibility.
 
 
 v0.2.2
