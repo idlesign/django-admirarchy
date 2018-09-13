@@ -108,7 +108,7 @@ class HierarchicalChangeList(ChangeList):
         self._hierarchy = model_admin.hierarchy
         self._request = request
         if not isinstance(self._hierarchy, NoHierarchy):
-            list_display = [self._hierarchy.NAV_FIELD_MARKER] + list_display
+            list_display = [self._hierarchy.NAV_FIELD_MARKER] + list(list_display)
 
         super(HierarchicalChangeList, self).__init__(
             request, model, list_display, list_display_links,
