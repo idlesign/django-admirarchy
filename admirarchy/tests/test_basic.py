@@ -1,3 +1,6 @@
+# -*- encoding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django import VERSION
 
 from .testapp.models import AdjacencyListModel, NestedSetModel
@@ -17,7 +20,7 @@ def actual_test(model_id, user_create, request_client):
 
     resp = client.get(url_base)
 
-    assert 'Upper level' not in resp.rendered_content
+    assert 'Объектов внутри' in resp.rendered_content
 
     if VERSION_PRE_19:
         assert '/1/' in resp.rendered_content
@@ -31,7 +34,7 @@ def actual_test(model_id, user_create, request_client):
 
     resp = client.get(url_base + '?pid=1')
 
-    assert 'Upper level' in resp.rendered_content
+    assert 'Верхний уровень' in resp.rendered_content
 
     if VERSION_PRE_19:
         assert '/1/' not in resp.rendered_content

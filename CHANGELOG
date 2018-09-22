@@ -2,6 +2,11 @@ django-admirarchy changelog
 ===========================
 
 
+Unreleased
+----------
+* Fixed UnicodeEncodeError for non-en locales.
+
+
 v0.2.3
 ------
 * Fixed FK popup for nested sets.
