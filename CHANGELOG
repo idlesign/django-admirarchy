@@ -2,8 +2,8 @@ django-admirarchy changelog
 ===========================
 
 
-Unreleased
-----------
+v0.2.4
+------
 * Fixed UnicodeEncodeError for non-en locales.
 
 
