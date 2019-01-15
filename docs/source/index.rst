@@ -22,7 +22,7 @@ Hierarchies described as adjacency lists and nested sets are supported.
 Requirements
 ------------
 
-1. Python 2.7+, 3.4+
+1. Python 2.7+, 3.5+
 2. Django 1.7+
 3. Django Admin contrib
 
