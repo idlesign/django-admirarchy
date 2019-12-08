@@ -8,7 +8,7 @@ https://github.com/idlesign/django-admirarchy
 
 ----
 
-|release| |lic| |ci| |coverage| |health|
+|release| |lic| |ci| |coverage|
 
 .. |release| image:: https://img.shields.io/pypi/v/django-admirarchy.svg
     :target: https://pypi.python.org/pypi/django-admirarchy
@@ -21,9 +21,6 @@ https://github.com/idlesign/django-admirarchy
 
 .. |coverage| image:: https://img.shields.io/coveralls/idlesign/django-admirarchy/master.svg
     :target: https://coveralls.io/r/idlesign/django-admirarchy
-
-.. |health| image:: https://landscape.io/github/idlesign/django-admirarchy/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/idlesign/django-admirarchy/master
 
 
 Description
