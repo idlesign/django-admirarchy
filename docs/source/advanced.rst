@@ -16,16 +16,15 @@ of a field in your model containing parent item identifier (defaults to ``parent
 
     from django.contrib import admin
 
-    from .models import MyModel
     from admirarchy.toolbox import HierarchicalModelAdmin, AdjacencyList
 
+    from .models import MyModel
 
+
+    @admin.register(MyModel)
     class MyModelAdmin(HierarchicalModelAdmin):
 
         hierarchy = AdjacencyList('upper')  # That says MyModel uses `upper` field to store parent ID.
-
-
-    admin.site.register(MyModel, MyModelAdmin)
 
 
 
@@ -40,14 +39,14 @@ of fields containing left and right set limits, and nesting level (defaults to `
 
     from django.contrib import admin
 
-    from .models import MyModel
     from admirarchy.toolbox import HierarchicalModelAdmin, NestedSet
 
+    from .models import MyModel
 
+
+    @admin.register(MyModel)
     class MyModelAdmin(HierarchicalModelAdmin):
 
         # That says MyModel uses has 'left_border', 'right_border', 'depth' to describe nesting.
         hierarchy = NestedSet('left_border', 'right_border', 'depth')
 
-
-    admin.site.register(MyModel, MyModelAdmin)

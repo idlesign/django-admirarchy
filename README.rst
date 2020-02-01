@@ -42,16 +42,16 @@ Hierarchies described as adjacency lists and nested sets are supported.
     # admin.py of your application
     from django.contrib import admin
 
-    from .models import MyModel  # Let's say this model represents a hierarchy.
     from admirarchy.toolbox import HierarchicalModelAdmin
+
+    from .models import MyModel  # Let's say this model represents a hierarchy.
 
 
     # Inherit from HierarchicalModelAdmin instead of admin.ModelAdmin
+    @admin.register(MyModel)
     class MyModelAdmin(HierarchicalModelAdmin):
 
         hierarchy = True  # This enables hierarchy handling.
-
-    admin.site.register(MyModel, MyModelAdmin)
 
 
 Done. Go navigate %)
