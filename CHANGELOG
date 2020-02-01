@@ -5,6 +5,7 @@ django-admirarchy changelog
 Unreleased
 ----------
 ! Dropped support for Python 2.
++ Root search now works as global search.
 * Fixed TypeError for AdjacencyList.
 
 

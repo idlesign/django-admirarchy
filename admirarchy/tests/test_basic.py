@@ -38,7 +38,6 @@ def actual_test(model_id, user_create, request_client):
         assert '/2/?_changelist_filters=pid%3D1' in resp.rendered_content
         assert '/3/?_changelist_filters=pid%3D1' in resp.rendered_content
 
-
     else:
         assert '/1/change/' not in resp.rendered_content
         assert '/2/change/?_changelist_filters=pid%3D1' in resp.rendered_content
@@ -51,11 +50,16 @@ def actual_test(model_id, user_create, request_client):
     # Foreign key popup.
     resp = client.get(url_base + '?_to_field=id&_popup=1')
 
-    print(resp.rendered_content)
-
     assert '?pid=1&amp;' in resp.rendered_content
     assert '_popup=1' in resp.rendered_content
     assert model_id + '_parent' in resp.rendered_content
+
+    # Search
+    resp = client.get(url_base + '?q=ch').rendered_content
+
+    assert model_id + '_child1' in resp
+    assert model_id + '_child2' in resp
+    assert model_id + '_child3' in resp
 
 
 def test_adjacency_list(request_client, user_create):
@@ -67,7 +71,8 @@ def test_adjacency_list(request_client, user_create):
 
     parent = make_node('parent')
     make_node('child1', parent=parent)
-    make_node('child2', parent=parent)
+    child2 = make_node('child2', parent=parent)
+    make_node('child3', parent=child2)
 
     actual_test('adjacencylistmodel', user_create, request_client)
 
@@ -79,8 +84,9 @@ def test_nested_set(request_client, user_create):
         node.save()
         return node
 
-    make_node('parent', left=1, right=6, level=0)
+    make_node('parent', left=1, right=8, level=0)
     make_node('child1', left=2, right=3, level=1)
-    make_node('child2', left=4, right=5, level=1)
+    make_node('child2', left=4, right=7, level=1)
+    make_node('child3', left=5, right=6, level=2)
 
     actual_test('nestedsetmodel', user_create, request_client)

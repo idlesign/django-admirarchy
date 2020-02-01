@@ -196,14 +196,12 @@ class Hierarchy:
         :param request:
 
         """
-        val = request.GET.get(cls.PARENT_ID_QS_PARAM, False)
+        qs_param = cls.PARENT_ID_QS_PARAM
+
+        val = request.GET.get(qs_param, False)
         pid = val or None
 
-        try:
-            del changelist.params[cls.PARENT_ID_QS_PARAM]
-
-        except KeyError:
-            pass
+        changelist.params.pop(qs_param, None)
 
         return pid
 
@@ -251,18 +249,23 @@ class AdjacencyList(Hierarchy):
         pid = self.get_pid_from_request(changelist, request)
         self.pid = pid
 
+        if changelist.query:
+            # Do not restrict search to current sub.
+            return
+
         changelist.params[pid_field] = pid
 
     def hook_filter_queryset(self, changelist: 'HierarchicalChangeList', query_set: QuerySet) -> QuerySet:
         """Triggered by `ChangeList.get_queryset()`."""
 
         if self.pid is None:
-            changelist.params[self.pid_field] = ''
+            changelist.params.pop(self.pid_field, None)
 
         return query_set
 
     def hook_get_results(self, changelist: 'HierarchicalChangeList'):
         """Triggered by `ChangeList.get_results()`."""
+
         result_list = list(changelist.result_list)
 
         if self.pid:
@@ -332,13 +335,20 @@ class NestedSet(Hierarchy):
         # Get parent item first.
         qs = changelist.root_queryset
 
+        if changelist.query:
+            # Do not restrict search to current sub.
+            return
+
         if pid:
             self.parent = qs.get(pk=pid)
             changelist.params.update(self.get_immediate_children_filter(self.parent))
 
         else:
             changelist.params[self.level_field] = self.root_level
-            self.parent = qs.get(**{key: val for key, val in changelist.params.items() if not key.startswith('_')})
+            self.parent = qs.get(**{
+                key: val for key, val in changelist.params.items()
+                if not key.startswith('_') and key != 'q'
+            })
 
     def hook_get_results(self, changelist: 'HierarchicalChangeList'):
         """Triggered by `ChangeList.get_results()`."""
