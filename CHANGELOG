@@ -4,6 +4,7 @@ django-admirarchy changelog
 
 Unreleased
 ----------
+! Dropped support for Python 2.
 * Fixed TypeError for AdjacencyList.
 
 

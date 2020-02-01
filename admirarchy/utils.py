@@ -1,15 +1,16 @@
-from __future__ import unicode_literals
-
 from copy import copy
+from typing import Type, Optional, Dict, Tuple
 
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.views.main import ChangeList
 from django.db import models
+from django.db.models import Model, QuerySet
 from django.db.models.fields import FieldDoesNotExist
+from django.http import HttpRequest
 from django.utils.encoding import force_text
 from django.utils.html import format_html
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from .exceptions import AdmirarchyConfigurationError
 
@@ -19,16 +20,17 @@ class HierarchicalModelAdmin(ModelAdmin):
 
     hierarchy = False  # type: Hierarchy
     change_list_template = 'admin/admirarchy/change_list.html'
+
     _current_changelist = None
 
-    def get_changelist(self, request, **kwargs):
+    def get_changelist(self, request: HttpRequest, **kwargs) -> Type['HierarchicalChangeList']:
         """Returns an appropriate ChangeList for ModelAdmin.
 
         Initializes hierarchies handling.
 
         :param request:
         :param kwargs:
-        :rtype: HierarchicalChangeList
+
         """
         Hierarchy.init_hierarchy(self)
 
@@ -42,7 +44,7 @@ class HierarchicalModelAdmin(ModelAdmin):
 
         return super(HierarchicalModelAdmin, self).change_view(*args, **kwargs)
 
-    def action_checkbox(self, obj):
+    def action_checkbox(self, obj: Model):
         """Renders checkboxes.
 
         Disable checkbox for parent item navigation link.
@@ -53,7 +55,7 @@ class HierarchicalModelAdmin(ModelAdmin):
 
         return super(HierarchicalModelAdmin, self).action_checkbox(obj)
 
-    def hierarchy_nav(self, obj):
+    def hierarchy_nav(self, obj: Model) -> str:
         """Renders hierarchy navigation elements (folders)."""
 
         result_repr = ''  # For items without children.
@@ -74,9 +76,11 @@ class HierarchicalModelAdmin(ModelAdmin):
             if obj.pk:
                 url = '?%s=%s' % (Hierarchy.PARENT_ID_QS_PARAM, obj.pk)
 
-            if self._current_changelist.is_popup:
+            changelist = self._current_changelist
 
-                qs_get = copy(self._current_changelist._request.GET)
+            if changelist.is_popup:
+
+                qs_get = copy(changelist._request.GET)
 
                 try:
                     del qs_get[Hierarchy.PARENT_ID_QS_PARAM]
@@ -104,7 +108,7 @@ class HierarchicalChangeList(ChangeList):
         """Adds hierarchy navigation column if necessary.
 
         :param args:
-        :return:
+
         """
         model_admin._current_changelist = self
         self._hierarchy = model_admin.hierarchy
@@ -118,11 +122,11 @@ class HierarchicalChangeList(ChangeList):
             list_select_related, list_per_page, list_max_show_all,
             list_editable, model_admin, *args)
 
-    def get_queryset(self, request):
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
         """Constructs a query set.
 
         :param request:
-        :return:
+
         """
         hierarchy = self._hierarchy
         hierarchy.hook_get_queryset(self, request)
@@ -132,21 +136,21 @@ class HierarchicalChangeList(ChangeList):
 
         return qs
 
-    def get_results(self, request):
+    def get_results(self, request: HttpRequest):
         """Gets query set results.
 
         :param request:
-        :return:
+
         """
         super(HierarchicalChangeList, self).get_results(request)
 
         self._hierarchy.hook_get_results(self)
 
-    def check_field_exists(self, field_name):
+    def check_field_exists(self, field_name: str):
         """Implements field exists check for debugging purposes.
 
         :param field_name:
-        :return:
+
         """
         if not settings.DEBUG:
             return
@@ -161,7 +165,7 @@ class HierarchicalChangeList(ChangeList):
 ########################################################
 
 
-class Hierarchy(object):
+class Hierarchy:
     """Base hierarchy class. Hierarchy classes must inherit from it."""
 
     PARENT_ID_QS_PARAM = 'pid'  # Parent ID query string parameter.
@@ -170,8 +174,9 @@ class Hierarchy(object):
     NAV_FIELD_MARKER = 'hierarchy_nav'
 
     @classmethod
-    def init_hierarchy(cls, model_admin):
+    def init_hierarchy(cls, model_admin: HierarchicalModelAdmin):
         """Initializes model admin with hierarchy data."""
+
         hierarchy = getattr(model_admin, 'hierarchy')
 
         if hierarchy:
@@ -184,12 +189,12 @@ class Hierarchy(object):
         model_admin.hierarchy = hierarchy
 
     @classmethod
-    def get_pid_from_request(cls, changelist, request):
+    def get_pid_from_request(cls, changelist: 'HierarchicalChangeList', request: HttpRequest) -> Optional[str]:
         """Gets parent ID from query string.
 
         :param changelist:
         :param request:
-        :return:
+
         """
         val = request.GET.get(cls.PARENT_ID_QS_PARAM, False)
         pid = val or None
@@ -202,16 +207,16 @@ class Hierarchy(object):
 
         return pid
 
-    def hook_change_view(self, changelist, view_args, view_kwargs):
+    def hook_change_view(self, model_admin: HierarchicalModelAdmin, view_args: Tuple, view_kwargs: Dict):
         """Triggered by `ModelAdmin.change_view()`."""
 
-    def hook_get_results(self, changelist):
+    def hook_get_results(self, changelist: 'HierarchicalChangeList'):
         """Triggered by `ChangeList.get_results()`."""
 
-    def hook_get_queryset(self, changelist, request):
+    def hook_get_queryset(self, changelist: 'HierarchicalChangeList', request: HttpRequest):
         """Triggered by `ChangeList.get_queryset()`."""
 
-    def hook_filter_queryset(self, changelist, query_set):
+    def hook_filter_queryset(self, changelist: 'HierarchicalChangeList', query_set: QuerySet) -> QuerySet:
         """Triggered by `ChangeList.get_queryset()`."""
         return query_set
 
@@ -222,21 +227,22 @@ class NoHierarchy(Hierarchy):
 
 class AdjacencyList(Hierarchy):
 
-    def __init__(self, parent_id_field='parent'):
+    def __init__(self, parent_id_field: str = 'parent'):
+
         self.pid = None
         self.pid_field = parent_id_field
         self.pid_field_real = '%s_id' % parent_id_field
 
-    def hook_change_view(self, changelist, view_args, view_kwargs):
+    def hook_change_view(self, model_admin: HierarchicalModelAdmin, view_args: Tuple, view_kwargs: Dict):
         """Triggered by `ModelAdmin.change_view()`.
 
         Replaces parent item dropdown list with a lookup dialog.
 
         """
         # TODO start from an appropriate tree level when in parent lookup popup
-        changelist.raw_id_fields += (self.pid_field,)
+        model_admin.raw_id_fields += (self.pid_field,)
 
-    def hook_get_queryset(self, changelist, request):
+    def hook_get_queryset(self, changelist: 'HierarchicalChangeList', request: HttpRequest):
         """Triggered by `ChangeList.get_queryset()`."""
         pid_field = self.pid_field
 
@@ -247,7 +253,7 @@ class AdjacencyList(Hierarchy):
 
         changelist.params[pid_field] = pid
 
-    def hook_filter_queryset(self, changelist, query_set):
+    def hook_filter_queryset(self, changelist: 'HierarchicalChangeList', query_set: QuerySet) -> QuerySet:
         """Triggered by `ChangeList.get_queryset()`."""
 
         if self.pid is None:
@@ -255,7 +261,7 @@ class AdjacencyList(Hierarchy):
 
         return query_set
 
-    def hook_get_results(self, changelist):
+    def hook_get_results(self, changelist: 'HierarchicalChangeList'):
         """Triggered by `ChangeList.get_results()`."""
         result_list = list(changelist.result_list)
 
@@ -290,7 +296,13 @@ class AdjacencyList(Hierarchy):
 
 class NestedSet(Hierarchy):
 
-    def __init__(self, left_field='lft', right_field='rgt', level_field='level', root_level=0):
+    def __init__(
+            self,
+            left_field: str = 'lft',
+            right_field: str = 'rgt',
+            level_field: str = 'level',
+            root_level: int = 0
+    ):
         self.pid = None
         self.parent = None
         self.left_field = left_field
@@ -298,34 +310,37 @@ class NestedSet(Hierarchy):
         self.level_field = level_field
         self.root_level = root_level
 
-    def get_range_clause(self, obj):
+    def get_range_clause(self, obj: Model) -> Tuple[int, int]:
         return getattr(obj, self.left_field), getattr(obj, self.right_field)
 
-    def get_immediate_children_filter(self, obj):
+    def get_immediate_children_filter(self, obj: Model) -> Dict:
         flt = {
             '%s__range' % self.left_field: self.get_range_clause(obj),
             self.level_field: getattr(obj, self.level_field) + 1
         }
         return flt
 
-    def hook_get_queryset(self, changelist, request):
+    def hook_get_queryset(self, changelist: 'HierarchicalChangeList', request: HttpRequest):
         """Triggered by `ChangeList.get_queryset()`."""
+
         changelist.check_field_exists(self.left_field)
         changelist.check_field_exists(self.right_field)
-        self.pid = self.get_pid_from_request(changelist, request)
+
+        pid = self.get_pid_from_request(changelist, request)
+        self.pid = pid
 
         # Get parent item first.
         qs = changelist.root_queryset
 
-        if self.pid:
-            self.parent = qs.get(pk=self.pid)
+        if pid:
+            self.parent = qs.get(pk=pid)
             changelist.params.update(self.get_immediate_children_filter(self.parent))
 
         else:
             changelist.params[self.level_field] = self.root_level
             self.parent = qs.get(**{key: val for key, val in changelist.params.items() if not key.startswith('_')})
 
-    def hook_get_results(self, changelist):
+    def hook_get_results(self, changelist: 'HierarchicalChangeList'):
         """Triggered by `ChangeList.get_results()`."""
 
         # Poor NestedSet guys they've punished themselves once chosen that approach,
@@ -345,7 +360,8 @@ class NestedSet(Hierarchy):
             if result.id in leafs:
                 setattr(result, self.CHILD_COUNT_MODEL_ATTR, 0)
             else:
-                setattr(result, self.CHILD_COUNT_MODEL_ATTR, '>1')  # Too much pain to get real stats, so that'll suffice.
+                # Too much pain to get real stats, so that'll suffice.
+                setattr(result, self.CHILD_COUNT_MODEL_ATTR, '>1')
 
         if self.pid:
             # Render to upper level link.
@@ -357,12 +373,15 @@ class NestedSet(Hierarchy):
             }
 
             try:
-                granparent_id = changelist.model.objects.filter(**filter_kwargs).order_by('-%s' % self.left_field)[0].id
-            except IndexError:
-                granparent_id = None
+                grandparent_id = changelist.model.objects.filter(
+                    **filter_kwargs
+                ).order_by('-%s' % self.left_field)[0].id
 
-            if granparent_id != parent.id:
-                parent = changelist.model(pk=granparent_id)
+            except IndexError:
+                grandparent_id = None
+
+            if grandparent_id != parent.id:
+                parent = changelist.model(pk=grandparent_id)
 
             setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
             result_list = [parent] + result_list
