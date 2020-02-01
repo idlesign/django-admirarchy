@@ -75,7 +75,6 @@ def test_adjacency_list(request_client, user_create):
     actual_test('adjacencylistmodel', user_create, request_client)
 
 
-
 def test_nested_set(request_client, user_create):
 
     def make_node(title, left, right, level):

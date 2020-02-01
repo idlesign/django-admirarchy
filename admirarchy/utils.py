@@ -124,9 +124,13 @@ class HierarchicalChangeList(ChangeList):
         :param request:
         :return:
         """
-        self._hierarchy.hook_get_queryset(self, request)
+        hierarchy = self._hierarchy
+        hierarchy.hook_get_queryset(self, request)
 
-        return super(HierarchicalChangeList, self).get_queryset(request)
+        qs = super(HierarchicalChangeList, self).get_queryset(request)
+        qs = hierarchy.hook_filter_queryset(self, qs)
+
+        return qs
 
     def get_results(self, request):
         """Gets query set results.
@@ -207,6 +211,10 @@ class Hierarchy(object):
     def hook_get_queryset(self, changelist, request):
         """Triggered by `ChangeList.get_queryset()`."""
 
+    def hook_filter_queryset(self, changelist, query_set):
+        """Triggered by `ChangeList.get_queryset()`."""
+        return query_set
+
 
 class NoHierarchy(Hierarchy):
     """Dummy (disabled) hierarchy class."""
@@ -230,9 +238,22 @@ class AdjacencyList(Hierarchy):
 
     def hook_get_queryset(self, changelist, request):
         """Triggered by `ChangeList.get_queryset()`."""
-        changelist.check_field_exists(self.pid_field)
-        self.pid = self.get_pid_from_request(changelist, request)
-        changelist.params[self.pid_field] = self.pid
+        pid_field = self.pid_field
+
+        changelist.check_field_exists(pid_field)
+
+        pid = self.get_pid_from_request(changelist, request)
+        self.pid = pid
+
+        changelist.params[pid_field] = pid
+
+    def hook_filter_queryset(self, changelist, query_set):
+        """Triggered by `ChangeList.get_queryset()`."""
+
+        if self.pid is None:
+            changelist.params[self.pid_field] = ''
+
+        return query_set
 
     def hook_get_results(self, changelist):
         """Triggered by `ChangeList.get_results()`."""
