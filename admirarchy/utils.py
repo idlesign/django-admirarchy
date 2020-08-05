@@ -4,9 +4,9 @@ from typing import Type, Optional, Dict, Tuple
 from django.conf import settings
 from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.views.main import ChangeList
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import Model, QuerySet
-from django.db.models.fields import FieldDoesNotExist
 from django.http import HttpRequest
 from django.utils.encoding import force_text
 from django.utils.html import format_html
@@ -18,7 +18,7 @@ from .exceptions import AdmirarchyConfigurationError
 class HierarchicalModelAdmin(ModelAdmin):
     """Customized Model admin handling hierarchies navigation."""
 
-    hierarchy = False  # type: Hierarchy
+    hierarchy: 'Hierarchy' = None
     change_list_template = 'admin/admirarchy/change_list.html'
 
     _current_changelist = None
@@ -74,7 +74,7 @@ class HierarchicalModelAdmin(ModelAdmin):
             url = './'
 
             if obj.pk:
-                url = '?%s=%s' % (Hierarchy.PARENT_ID_QS_PARAM, obj.pk)
+                url = f'?{Hierarchy.PARENT_ID_QS_PARAM}={obj.pk}'
 
             changelist = self._current_changelist
 
@@ -89,7 +89,7 @@ class HierarchicalModelAdmin(ModelAdmin):
                     pass
 
                 qs_get = qs_get.urlencode()
-                url = ('%s&%s' if '?' in url else '%s?%s') % (url, qs_get)
+                url = f'{url}&{qs_get}' if '?' in url else f'{url}?{qs_get}'
 
             result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, force_text(title))
 
@@ -229,7 +229,7 @@ class AdjacencyList(Hierarchy):
 
         self.pid = None
         self.pid_field = parent_id_field
-        self.pid_field_real = '%s_id' % parent_id_field
+        self.pid_field_real = f'{parent_id_field}_id'
 
     def hook_change_view(self, model_admin: HierarchicalModelAdmin, view_args: Tuple, view_kwargs: Dict):
         """Triggered by `ModelAdmin.change_view()`.
@@ -276,7 +276,7 @@ class AdjacencyList(Hierarchy):
             result_list = [parent] + result_list
 
         # Get children stats.
-        kwargs_filter = {'%s__in' % self.pid_field: result_list}
+        kwargs_filter = {f'{self.pid_field}__in': result_list}
 
         stats_qs = changelist.model.objects.filter(
             **kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
@@ -318,7 +318,7 @@ class NestedSet(Hierarchy):
 
     def get_immediate_children_filter(self, obj: Model) -> Dict:
         flt = {
-            '%s__range' % self.left_field: self.get_range_clause(obj),
+            f'{self.left_field}__range': self.get_range_clause(obj),
             self.level_field: getattr(obj, self.level_field) + 1
         }
         return flt
@@ -358,8 +358,11 @@ class NestedSet(Hierarchy):
 
         result_list = list(changelist.result_list)
 
+        left = self.left_field
+        right = self.right_field
+
         # Get children stats.
-        filter_kwargs = {'%s' % self.left_field: models.F('%s' % self.right_field) - 1}  # Leaf nodes only.
+        filter_kwargs = {f'{left}': models.F(f'{right}') - 1}  # Leaf nodes only.
         filter_kwargs.update(self.get_immediate_children_filter(self.parent))
 
         stats_qs = changelist.result_list.filter(**filter_kwargs).values_list('id')
@@ -378,14 +381,14 @@ class NestedSet(Hierarchy):
             parent = self.parent
 
             filter_kwargs = {
-                '%s__lt' % self.left_field: getattr(parent, self.left_field),
-                '%s__gt' % self.right_field: getattr(parent, self.right_field),
+                f'{left}__lt': getattr(parent, left),
+                f'{right}__gt': getattr(parent, right),
             }
 
             try:
                 grandparent_id = changelist.model.objects.filter(
                     **filter_kwargs
-                ).order_by('-%s' % self.left_field)[0].id
+                ).order_by(f'-{left}')[0].id
 
             except IndexError:
                 grandparent_id = None

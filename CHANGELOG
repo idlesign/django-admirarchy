@@ -2,6 +2,11 @@ django-admirarchy changelog
 ===========================
 
 
+Unreleased
+----------
+* Drop support for Python 3.5.
+
+
 v1.2.0 [2020-02-01]
 -------------------
 ! Dropped support for Python 2.
