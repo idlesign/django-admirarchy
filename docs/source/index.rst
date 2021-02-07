@@ -22,12 +22,6 @@ Hierarchies described as adjacency lists and nested sets are supported.
 Requirements
 ------------
 
-.. image:: https://idlesign.github.io/lbc/py2-lbc.svg
-   :target: https://idlesign.github.io/lbc/
-   :alt: LBC Python 2
-
-----
-
 1. Python 3.6+
 2. Django 1.8+
 3. Django Admin contrib
