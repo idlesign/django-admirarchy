@@ -2,16 +2,13 @@ django-admirarchy
 =================
 https://github.com/idlesign/django-admirarchy
 
-|release| |lic| |ci| |coverage|
+|release| |lic| |coverage|
 
 .. |release| image:: https://img.shields.io/pypi/v/django-admirarchy.svg
     :target: https://pypi.python.org/pypi/django-admirarchy
 
 .. |lic| image:: https://img.shields.io/pypi/l/django-admirarchy.svg
     :target: https://pypi.python.org/pypi/django-admirarchy
-
-.. |ci| image:: https://img.shields.io/travis/idlesign/django-admirarchy/master.svg
-    :target: https://travis-ci.org/idlesign/django-admirarchy
 
 .. |coverage| image:: https://img.shields.io/coveralls/idlesign/django-admirarchy/master.svg
     :target: https://coveralls.io/r/idlesign/django-admirarchy
