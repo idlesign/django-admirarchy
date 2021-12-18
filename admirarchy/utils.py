@@ -8,7 +8,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import Model, QuerySet
 from django.http import HttpRequest
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -91,7 +91,7 @@ class HierarchicalModelAdmin(ModelAdmin):
                 qs_get = qs_get.urlencode()
                 url = f'{url}&{qs_get}' if '?' in url else f'{url}?{qs_get}'
 
-            result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, force_text(title))
+            result_repr = format_html('<a href="{0}" class="{1}" title="{2}"></a>', url, icon, force_str(title))
 
         return result_repr
 
