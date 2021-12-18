@@ -53,5 +53,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.github_token }}
       run: |
-        coverage run --source=sitegate setup.py test
+        coverage run --source=admirarchy setup.py test
         coveralls --service=github
