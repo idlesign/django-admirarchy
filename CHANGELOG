@@ -2,8 +2,8 @@ django-admirarchy changelog
 ===========================
 
 
-Unreleased
-----------
+v1.2.2 [2021-12-18]
+-------------------
 * Made Django 4.0 compatible.
 
 
