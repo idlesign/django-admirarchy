@@ -289,7 +289,7 @@ class AdjacencyList(Hierarchy):
                 continue
 
             try:
-                setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.id])
+                setattr(item, self.CHILD_COUNT_MODEL_ATTR, stats[item.pk])
 
             except KeyError:
                 setattr(item, self.CHILD_COUNT_MODEL_ATTR, 0)
@@ -370,7 +370,7 @@ class NestedSet(Hierarchy):
 
         for result in result_list:
 
-            if result.id in leafs:
+            if result.pk in leafs:
                 setattr(result, self.CHILD_COUNT_MODEL_ATTR, 0)
             else:
                 # Too much pain to get real stats, so that'll suffice.
@@ -388,12 +388,12 @@ class NestedSet(Hierarchy):
             try:
                 grandparent_id = changelist.model.objects.filter(
                     **filter_kwargs
-                ).order_by(f'-{left}')[0].id
+                ).order_by(f'-{left}')[0].pk
 
             except IndexError:
                 grandparent_id = None
 
-            if grandparent_id != parent.id:
+            if grandparent_id != parent.pk:
                 parent = changelist.model(pk=grandparent_id)
 
             setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
