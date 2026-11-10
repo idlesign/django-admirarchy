@@ -1,25 +1,17 @@
-django-admirarchy contributing
-============================
+# django-admirarchy contributing
 
+## Submit issues
 
+If you spotted something weird in application behavior or want to propose a feature you are welcome.
 
-Submit issues
--------------
+## Write code
 
-If you spotted something weird in application behavior or want to propose a feature
-you can do that at https://github.com/idlesign/django-admirarchy/issues
+If you are eager to participate in application development and to work on an existing issue (whether it should be a bugfix or a feature implementation), fork, write code, and make a pull request right from the forked project page.
 
+When contributing code, follow the rules from [IDLE.md](https://github.com/idlesign/django-admirarchy/blob/master/IDLE.md).
 
-Write code
-----------
+## Spread the word
 
-If you are eager to participate in application development, fork it at https://github.com/idlesign/django-admirarchy,
-write your code, whether it should be a bugfix or a feature implementation, and make a pull request right
-from the forked project page.
+If you have some tips and tricks or any other words that you think might be of interest for the others — publish it wherever you find convenient.
 
-
-Spread the word
----------------
-
-If you have some tips and tricks or any other words that you think might be of interest for the others — publish it
-wherever you find convenient.
+See also: <https://github.com/idlesign/django-admirarchy>

@@ -42,7 +42,7 @@ class HierarchicalModelAdmin(ModelAdmin):
 
         self.hierarchy.hook_change_view(self, args, kwargs)
 
-        return super(HierarchicalModelAdmin, self).change_view(*args, **kwargs)
+        return super().change_view(*args, **kwargs)
 
     def action_checkbox(self, obj: Model):
         """Renders checkboxes.
@@ -53,7 +53,7 @@ class HierarchicalModelAdmin(ModelAdmin):
         if getattr(obj, Hierarchy.UPPER_LEVEL_MODEL_ATTR, False):
             return ''
 
-        return super(HierarchicalModelAdmin, self).action_checkbox(obj)
+        return super().action_checkbox(obj)
 
     def hierarchy_nav(self, obj: Model) -> str:
         """Renders hierarchy navigation elements (folders)."""
@@ -114,9 +114,9 @@ class HierarchicalChangeList(ChangeList):
         self._hierarchy = model_admin.hierarchy
         self._request = request
         if not isinstance(self._hierarchy, NoHierarchy):
-            list_display = [self._hierarchy.NAV_FIELD_MARKER] + list(list_display)
+            list_display = [self._hierarchy.NAV_FIELD_MARKER, *list(list_display)]
 
-        super(HierarchicalChangeList, self).__init__(
+        super().__init__(
             request, model, list_display, list_display_links,
             list_filter, date_hierarchy, search_fields,
             list_select_related, list_per_page, list_max_show_all,
@@ -131,7 +131,7 @@ class HierarchicalChangeList(ChangeList):
         hierarchy = self._hierarchy
         hierarchy.hook_get_queryset(self, request)
 
-        qs = super(HierarchicalChangeList, self).get_queryset(request)
+        qs = super().get_queryset(request)
         qs = hierarchy.hook_filter_queryset(self, qs)
 
         return qs
@@ -142,7 +142,7 @@ class HierarchicalChangeList(ChangeList):
         :param request:
 
         """
-        super(HierarchicalChangeList, self).get_results(request)
+        super().get_results(request)
 
         self._hierarchy.hook_get_results(self)
 
@@ -177,7 +177,7 @@ class Hierarchy:
     def init_hierarchy(cls, model_admin: HierarchicalModelAdmin):
         """Initializes model admin with hierarchy data."""
 
-        hierarchy = getattr(model_admin, 'hierarchy')
+        hierarchy = model_admin.hierarchy
 
         if hierarchy:
             if not isinstance(hierarchy, Hierarchy):
@@ -189,7 +189,29 @@ class Hierarchy:
         model_admin.hierarchy = hierarchy
 
     @classmethod
-    def get_pid_from_request(cls, changelist: 'HierarchicalChangeList', request: HttpRequest) -> Optional[str]:
+    def set_changelist_param(cls, changelist: 'HierarchicalChangeList', key: str, value):
+        """Sets a changelist filter parameter for any supported Django version."""
+        if value is None:
+            # None values are not query string encodable on modern Django.
+            key, value = f'{key}__isnull', '1'
+
+        changelist.params[key] = value
+
+        filter_params = getattr(changelist, 'filter_params', None)
+        if filter_params is not None:  # Django 5.0+
+            filter_params[key] = [value]
+
+    @classmethod
+    def pop_changelist_param(cls, changelist: 'HierarchicalChangeList', key: str):
+        """Removes a changelist filter parameter for any supported Django version."""
+        changelist.params.pop(key, None)
+
+        filter_params = getattr(changelist, 'filter_params', None)
+        if filter_params is not None:  # Django 5.0+
+            filter_params.pop(key, None)
+
+    @classmethod
+    def get_pid_from_request(cls, changelist: 'HierarchicalChangeList', request: HttpRequest) -> str | None:
         """Gets parent ID from query string.
 
         :param changelist:
@@ -201,7 +223,7 @@ class Hierarchy:
         val = request.GET.get(qs_param, False)
         pid = val or None
 
-        changelist.params.pop(qs_param, None)
+        cls.pop_changelist_param(changelist, qs_param)
 
         return pid
 
@@ -253,13 +275,13 @@ class AdjacencyList(Hierarchy):
             # Do not restrict search to current sub.
             return
 
-        changelist.params[pid_field] = pid
+        self.set_changelist_param(changelist, pid_field, pid)
 
     def hook_filter_queryset(self, changelist: 'HierarchicalChangeList', query_set: QuerySet) -> QuerySet:
         """Triggered by `ChangeList.get_queryset()`."""
 
         if self.pid is None:
-            changelist.params.pop(self.pid_field, None)
+            self.pop_changelist_param(changelist, self.pid_field)
 
         return query_set
 
@@ -273,10 +295,11 @@ class AdjacencyList(Hierarchy):
             parent = changelist.model.objects.get(pk=self.pid)
             parent = changelist.model(pk=getattr(parent, self.pid_field_real, None))
             setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
-            result_list = [parent] + result_list
+            result_list = [parent, *result_list]
 
         # Get children stats.
-        kwargs_filter = {f'{self.pid_field}__in': result_list}
+        saved_items = [item for item in result_list if item.pk is not None]
+        kwargs_filter = {f'{self.pid_field}__in': saved_items}
 
         stats_qs = changelist.model.objects.filter(
             **kwargs_filter).values_list(self.pid_field).annotate(cnt=models.Count(self.pid_field))
@@ -341,10 +364,12 @@ class NestedSet(Hierarchy):
 
         if pid:
             self.parent = qs.get(pk=pid)
-            changelist.params.update(self.get_immediate_children_filter(self.parent))
+
+            for key, val in self.get_immediate_children_filter(self.parent).items():
+                self.set_changelist_param(changelist, key, val)
 
         else:
-            changelist.params[self.level_field] = self.root_level
+            self.set_changelist_param(changelist, self.level_field, self.root_level)
             self.parent = qs.get(**{
                 key: val for key, val in changelist.params.items()
                 if not key.startswith('_') and key != 'q'
@@ -397,6 +422,6 @@ class NestedSet(Hierarchy):
                 parent = changelist.model(pk=grandparent_id)
 
             setattr(parent, self.UPPER_LEVEL_MODEL_ATTR, True)
-            result_list = [parent] + result_list
+            result_list = [parent, *result_list]
 
         changelist.result_list = result_list

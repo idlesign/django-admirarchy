@@ -1,65 +1,46 @@
-django-admirarchy changelog
-===========================
+# django-admirarchy changelog
 
+### Unreleased
+* ** Fixed children stats query to skip unsaved synthetic items.
+* ** Fixed hierarchy navigation on Django 5.0+ (changelist filter params handling).
 
-v1.2.2 [2021-12-18]
--------------------
-* Made Django 4.0 compatible.
+### v1.2.2 [2021-12-18]
+* ** Made Django 4.0 compatible.
 
+### v1.2.1 [2020-09-14]
+* ** Add Django 3.1 to QA
+* ** Drop support for Python 3.5.
 
-v1.2.1 [2020-09-14]
--------------------
-* Add Django 3.1 to QA
-* Drop support for Python 3.5.
+### v1.2.0 [2020-02-01]
+* !! Dropped support for Python 2.
+* ++ Root search now works as global search.
+* ** Fixed TypeError for AdjacencyList.
 
+### v1.1.0 [2019-12-08]
+* !! Dropped QA for Django 1.7.
+* !! Dropped QA for Python 2.
+* ++ Add Django 3.0 compatibility.
 
-v1.2.0 [2020-02-01]
--------------------
-! Dropped support for Python 2.
-+ Root search now works as global search.
-* Fixed TypeError for AdjacencyList.
+### v1.0.0
+* !! Dropped QA for Python 3.4.
+* ** No functional changes. Celebrating 1.0.0.
 
+### v0.2.4
+* ** Fixed UnicodeEncodeError for non-en locales.
 
-v1.1.0 [2019-12-08]
--------------------
-! Dropped QA for Django 1.7.
-! Dropped QA for Python 2.
-+ Add Django 3.0 compatibility.
+### v0.2.3
+* ** Fixed FK popup for nested sets.
+* ** Improved Django 2+ compatibility.
 
+### v0.2.2
+* ** Dummy. No changes.
 
-v1.0.0
-------
-! Dropped QA for Python 3.4.
-* No functional changes. Celebrating 1.0.0.
+### v0.2.1
+* ++ Added Grappelli style support.
+* ** Django 1.10 compatibility improved.
 
+### v0.2.0
+* ++ Implemented in-popup navigation for adjacency lists.
 
-v0.2.4
-------
-* Fixed UnicodeEncodeError for non-en locales.
-
-
-v0.2.3
-------
-* Fixed FK popup for nested sets.
-* Improved Django 2+ compatibility.
-
-
-v0.2.2
-------
-* Dummy. No changes.
-
-
-v0.2.1
-------
-+ Added Grappelli style support.
-* Django 1.10 compatibility improved.
-
-
-v0.2.0
-------
-+ Implemented in-popup navigation for adjacency lists.
-
-
-v0.1.0
-------
-+ Basic functionality.
+### v0.1.0
+* ++ Basic functionality.

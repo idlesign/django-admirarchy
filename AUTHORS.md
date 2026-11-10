@@ -1,18 +1,12 @@
-django-admirarchy authors
-=========================
+# django-admirarchy authors
 
 Created by Igor `idle sign` Starikov.
 
+## Contributors
 
-Contributors
-------------
-Serhiy Zahoriya <https://github.com/int-ua>
-Rebecca <https://github.com/rbreu>
+* Serhiy Zahoriya <https://github.com/int-ua>
+* Rebecca <https://github.com/rbreu>
 
-
-
-Translators
------------
+## Translators
 
 Here could be your name.
-

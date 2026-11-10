@@ -1,22 +1,25 @@
-django-admirarchy installation
-==============================
+# django-admirarchy installation
 
+Python `pip` package is required to install `django-admirarchy`.
 
-Python ``setuptools`` package is required to install django-admirarchy.
+## From sources
 
+Use the following command line to install `django-admirarchy` from sources directory (containing `pyproject.toml`):
 
-Use the following command line to install django-admirarchy from sources directory (containing setup.py):
+```shell
+pip install .
+```
 
-    easy_install .
+## From PyPI
 
-or
+Alternatively you can install `django-admirarchy` from PyPI:
 
-    python setup.py install
+```shell
+pip install django-admirarchy
+```
 
+Use `-U` flag for upgrade:
 
-Alternatively you can install an up-to-date version of django-admirarchy from PyPI:
-
-    easy_install django-admirarchy
-
-
-Note: `easy_install` is bundled with ``setuptools``.
+```shell
+pip install -U django-admirarchy
+```
