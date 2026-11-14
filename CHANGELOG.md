@@ -1,6 +1,6 @@
 # django-admirarchy changelog
 
-### Unreleased
+### v1.2.3 [2026-11-14]
 * ** Fixed children stats query to skip unsaved synthetic items.
 * ** Fixed hierarchy navigation on Django 5.0+ (changelist filter params handling).
 
